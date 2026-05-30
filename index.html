@@ -381,6 +381,7 @@
 
     <div id="app-container">
         
+        <!-- Segment Progress Tracker -->
         <div class="quiz-top-bar" id="quiz-progress-wrapper" style="display: none;">
             <div class="timer-badge" id="question-timer" style="margin: 0; width: 44px; height: 44px; font-size: 1.1rem; border-width: 2px;">--</div>
             <div class="progress-container">
@@ -445,7 +446,7 @@
                 </div>
             </div>
 
-            <!-- Mistake review panel -->
+            <!-- Mistakes revision panel -->
             <div id="wrong-review-section" class="wrong-review-container" style="display: none;">
                 <h3 class="wrong-review-title">Revision</h3>
                 <div class="wrong-scroll-area" id="wrong-scroll-list">
@@ -459,6 +460,7 @@
     </div>
 
     <script>
+        /* --- STATE & DATA --- */
         let state = {
             groupSelection: 'A',
             scores: { partA: 0, partB: 0 },
@@ -466,13 +468,16 @@
             currentPart: '', // 'PART_A', 'PART_B', 'FINAL'
             currentIndex: 0,
             timerInterval: null,
-            isAnswering: false
+            isAnswering: false,
+            // Shuffled runtime arrays for randomized question order
+            shuffledPartA: [],
+            shuffledPartB: []
         };
 
         // Exactly 15 questions for Part A (Single Kana Characters / Short Romaji)
         const partA_Data = [
             { q: 'a', a: 'あ', opts: ['あ', 'か', 'さ', 'た'] },
-            { q: 'ki', a: 'き', opts: ['き', 'し', 'ち', 'に'] },
+            { q: 'ki', a: 'き', opts: ['き', 'し', 'さ', 'に'] },
             { q: 'su', a: 'す', opts: ['す', 'つ', 'ぬ', 'む'] },
             { q: 'te', a: 'て', opts: ['て', 'け', 'せ', 'ね'] },
             { q: 'no', a: 'の', opts: ['の', 'も', 'め', 'ぬ'] },
@@ -491,7 +496,7 @@
         // Exactly 10 questions for Part B (Combined Words)
         const partB_Data = [
             { q: 'Inu', a: 'いぬ', opts: ['いぬ', 'ねこ', 'とり', 'さる'] },
-            { q: 'Saka', a: 'さか', opts: ['さか', 'やま', 'かわ', 'うみ'] },
+            { q: 'Saka', a: 'さか', opts: ['さか', 'かさ', 'かわ', 'うみ'] },
             { q: 'Kasa', a: 'かさ', opts: ['かさ', 'くつ', 'ふく', 'ほん'] },
             { q: 'Hito', a: 'ひと', opts: ['ひと', 'こと', 'もの', 'ほか'] },
             { q: 'Mise', a: 'みせ', opts: ['みせ', 'いえ', 'まち', 'えき'] },
@@ -509,6 +514,7 @@
 
         const bgColors = ['bg-red', 'bg-blue', 'bg-yellow', 'bg-green'];
 
+        /* --- UTILITY FUNCTIONS --- */
         const showScreen = (screenId) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
@@ -543,15 +549,21 @@
             document.getElementById('step-label').innerText = `${current} / ${total}`;
         };
 
+        /* --- CORE APPLICATION FLOW --- */
         function startApp() {
             const selectedGroup = document.querySelector('input[name="group"]:checked').value;
             state.groupSelection = selectedGroup;
             state.scores = { partA: 0, partB: 0 };
             state.wrongAnswers = [];
             
+            // Generate randomized session copies for both sets of questions
+            state.shuffledPartA = shuffleArray(partA_Data);
+            state.shuffledPartB = shuffleArray(partB_Data);
+            
             startTransitionA();
         }
 
+        /* TRANSITION SCREENS */
         function startTransitionA() {
             showScreen('screen-transition');
             document.getElementById('transition-title').style.display = 'none';
@@ -564,7 +576,7 @@
             document.getElementById('transition-title').style.display = 'block';
             document.getElementById('transition-title').innerText = "Breaktime";
             document.getElementById('transition-subtitle').innerText = "";
-            runDualPhaseTransition(20, 20, 'PART_B');
+            runDualPhaseTransition(20, 5, 'PART_B');
         }
 
         function startTransitionC() {
@@ -654,12 +666,13 @@
             }
         }
 
+        /* --- QUESTION LOGIC (PARTS A & B) --- */
         function renderQuestion() {
             clearGlobalTimer();
             state.isAnswering = false;
             
             const isPartA = state.currentPart === 'PART_A';
-            const dataSet = isPartA ? partA_Data : partB_Data;
+            const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
             const timeLimit = isPartA ? 5 : 8; // Part A: 5s, Part B: 8s
             
             if (state.currentIndex >= dataSet.length) {
@@ -681,7 +694,7 @@
             const shuffledOpts = shuffleArray(currentQ.opts);
             shuffledOpts.forEach((opt, idx) => {
                 const btn = document.createElement('button');
-                // Dynamically append 'part-a-btn' for Part A choice buttons (enables the font scaling safely)
+                // Append 'part-a-btn' for single kana font scaling safely
                 btn.className = `choice-btn ${bgColors[idx]} ${isPartA ? 'part-a-btn' : ''}`;
                 btn.innerText = opt;
                 btn.onclick = () => handleChoice(btn, opt, currentQ.a);
@@ -712,7 +725,7 @@
                 if (isPartA) state.scores.partA++;
                 else state.scores.partB++;
             } else {
-                const dataSet = isPartA ? partA_Data : partB_Data;
+                const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
                 const activeQuestion = dataSet[state.currentIndex].q;
                 state.wrongAnswers.push({
                     part: isPartA ? 'Part A' : 'Part B',
@@ -722,15 +735,18 @@
                 });
             }
 
+            // Disable all buttons and show a neutral selection feedback (no green/red hints)
             const buttons = document.querySelectorAll('.choice-btn');
             buttons.forEach(btn => {
                 btn.disabled = true;
-                if (btn.innerText === correctAns) {
-                    btn.classList.add('correct-answer');
-                } else if (btn === clickedBtn) {
-                    btn.classList.add('wrong-answer');
+                if (btn === clickedBtn) {
+                    // Highlight selected option neutrally with a scaling and subtle outline
+                    btn.style.transform = 'scale(0.98)';
+                    btn.style.boxShadow = '0 0 0 4px #ffffff, 0 4px 12px rgba(0,0,0,0.15)';
                 } else {
-                    btn.classList.add('wrong-answer');
+                    // Dim non-selected options
+                    btn.style.opacity = '0.3';
+                    btn.style.filter = 'grayscale(0.5)';
                 }
             });
 
@@ -740,6 +756,7 @@
             }, 1000);
         }
 
+        /* --- FINAL ROUND LOGIC --- */
         function renderFinalQuestion() {
             clearGlobalTimer();
             state.isAnswering = false;
@@ -771,6 +788,7 @@
             }, 1000);
         }
 
+        /* --- SCORE CALCULATOR & RESULTS VIEW --- */
         function showResults() {
             showScreen('screen-results');
             
@@ -780,7 +798,7 @@
             const aPerc = Math.round((state.scores.partA / aMax) * 100);
             const bPerc = Math.round((state.scores.partB / bMax) * 100);
 
-            // Applying weightage math: Part A = 1 point, Part B = 2 points
+            // Dynamic Weightage Formula: Part A is 1 point, Part B is 2 points
             const totalScore = (state.scores.partA * 1) + (state.scores.partB * 2);
             const totalMax = (aMax * 1) + (bMax * 2);
             const totalPerc = Math.round((totalScore / totalMax) * 100);
@@ -791,7 +809,7 @@
             const scoreTotalEl = document.getElementById('score-total');
             scoreTotalEl.innerText = `${totalPerc}%`;
 
-            // Dynamic colors based on total accuracy % thresholds:
+            // Style total accuracy score color:
             // 0% - 49% -> Red | 50% - 79% -> Orange | 80% - 100% -> Green
             if (totalPerc <= 49) {
                 scoreTotalEl.style.color = '#ef4444'; // Red
