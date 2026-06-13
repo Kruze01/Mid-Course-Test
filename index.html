@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zero to Hero: Mid-course Test</title>
+    <title>Zero to Hero: Final Exam</title>
     <style>
         :root {
             --theme-bg: #f0f7ff;
@@ -249,29 +249,13 @@
             transform: translateY(1px);
         }
 
-        /* PART A LARGE FONT OVERRIDE: Targets single characters/short Romaji beautifully */
-        .choice-btn.part-a-btn {
-            font-size: 2.3rem;
-            padding: 18px 10px;
-        }
-
         .choice-btn.bg-red { background: linear-gradient(135deg, #ff5f7e, var(--k-red)); }
         .choice-btn.bg-blue { background: linear-gradient(135deg, #5fa3ff, var(--k-blue)); }
         .choice-btn.bg-yellow { background: linear-gradient(135deg, #fbc02d, var(--k-yellow)); }
         .choice-btn.bg-green { background: linear-gradient(135deg, #34d399, var(--k-green)); }
         
         .choice-btn:disabled { cursor: default; }
-        .correct-answer {
-            transform: scale(1.02) !important;
-            filter: brightness(1.05);
-            box-shadow: 0 0 0 4px #ffffff, 0 0 20px var(--k-green) !important;
-            z-index: 2;
-        }
-        .wrong-answer {
-            opacity: 0.25;
-            filter: grayscale(0.5) scale(0.95);
-        }
-
+        
         .results-box {
             background-color: #f8fafc;
             padding: 24px;
@@ -370,7 +354,6 @@
             .question-text { font-size: 3.2rem; margin: 15px 0; }
             .choices-grid { gap: 12px; }
             .choice-btn { padding: 18px 10px; font-size: 1.15rem; border-radius: 14px; }
-            .choice-btn.part-a-btn { font-size: 1.8rem; padding: 14px 8px; }
             .timer-badge { width: 56px; height: 56px; font-size: 1.3rem; }
             .radio-group { flex-direction: column; gap: 8px; margin-bottom: 20px; }
             .radio-group label { padding: 12px; font-size: 1rem; }
@@ -387,12 +370,12 @@
             <div class="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
-            <div class="step-label" id="step-label">1 / 15</div>
+            <div class="step-label" id="step-label">1 / 20</div>
         </div>
         
         <!-- Menu Screen -->
         <div id="screen-menu" class="screen active">
-            <h1>Zero to Hero: Mid-course Test</h1>
+            <h1>Zero to Hero: Final Exam</h1>
             
             <div style="text-align: left; margin-bottom: 8px;">
                 <h2 style="font-size: 0.9rem;">Choose your group:</h2>
@@ -407,13 +390,13 @@
                     Group B
                 </label>
             </div>
-            <button class="btn-primary" onclick="startApp()">Start Test</button>
+            <button class="btn-primary" onclick="startApp()">Begin Exam</button>
         </div>
 
         <!-- Transition Screen -->
         <div id="screen-transition" class="screen">
             <div class="timer-badge" id="transition-timer">5</div>
-            <div class="transition-text" id="transition-subtitle">The test begins in...</div>
+            <div class="transition-text" id="transition-subtitle">The exam begins in...</div>
             <h2 id="transition-title" style="margin-top: 15px; font-size: 1.8rem; color: var(--k-blue); display: none;">Breaktime</h2>
         </div>
 
@@ -430,8 +413,8 @@
         <!-- Final Question Screen -->
         <div id="screen-final" class="screen">
             <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--k-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">FINAL PART:</h2>
-            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 25px; line-height: 1.4;">Write down the following Romaji words in Hiragana on paper.</h3>
-            <div class="question-text" id="final-display" style="font-size: 4rem; margin: 30px 0;">Word</div>
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 25px; line-height: 1.4;">Convert Hiragana to Katakana & Katakana to  Hiragana and write down the answer on paper.</h3>
+            <div class="question-text" id="final-display" style="font-size: 2.2rem; margin: 30px 0; line-height: 1.3;">Word</div>
         </div>
 
         <!-- Results Screen -->
@@ -439,19 +422,16 @@
             <h1>Results</h1>
             
             <div class="results-box">
-                <div><span>Part A</span> <strong id="score-a">0 / 15 (0%)</strong></div>
-                <div><span>Part B</span> <strong id="score-b">0 / 10 (0%)</strong></div>
+                <div><span>Part A</span> <strong id="score-a">0 / 20 pts</strong></div>
+                <div><span>Part B</span> <strong id="score-b">0 / 20 pts</strong></div>
                 <div style="border-bottom: none; font-size: 1.35rem; margin-top: 18px; padding-top: 12px; border-top: 2px solid var(--border-color);">
-                    <span>Total Score</span> <strong id="score-total" style="font-size: 1.6rem;">0%</strong>
+                    <span>Total</span> <strong id="score-total" style="font-size: 1.6rem;">0 / 40</strong>
                 </div>
             </div>
 
-            <!-- Mistakes revision panel -->
             <div id="wrong-review-section" class="wrong-review-container" style="display: none;">
                 <h3 class="wrong-review-title">Revision</h3>
-                <div class="wrong-scroll-area" id="wrong-scroll-list">
-                    <!-- Wrong answers cards dynamically loaded here -->
-                </div>
+                <div class="wrong-scroll-area" id="wrong-scroll-list"></div>
             </div>
 
             <button class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="resetApp()">Home</button>
@@ -460,191 +440,115 @@
     </div>
 
     <script>
-        /* --- STATE & DATA --- */
         let state = {
             groupSelection: 'A',
             scores: { partA: 0, partB: 0 },
-            wrongAnswers: [], // Holds mistakes: { part, q, selected, correct }
-            currentPart: '', // 'PART_A', 'PART_B', 'FINAL'
+            wrongAnswers: [], 
+            currentPart: '', 
             currentIndex: 0,
             timerInterval: null,
             isAnswering: false,
-            // Shuffled runtime arrays for randomized question order
+            midBreakTaken: false, 
+            midBreakTakenFinal: false, 
             shuffledPartA: [],
             shuffledPartB: []
         };
 
-        // Exactly 15 questions for Part A (Single Kana Characters / Short Romaji)
         const partA_Data = [
-            { q: 'a', a: 'あ', opts: ['あ', 'か', 'さ', 'た'] },
-            { q: 'ki', a: 'き', opts: ['き', 'し', 'さ', 'に'] },
-            { q: 'su', a: 'す', opts: ['す', 'つ', 'ぬ', 'む'] },
-            { q: 'te', a: 'て', opts: ['て', 'け', 'せ', 'ね'] },
-            { q: 'no', a: 'の', opts: ['の', 'も', 'め', 'ぬ'] },
-            { q: 'ha', a: 'は', opts: ['は', 'ほ', 'ま', 'な'] },
-            { q: 'ma', a: 'ま', opts: ['ま', 'も', 'む', 'み'] },
-            { q: 'ru', a: 'る', opts: ['る', 'ろ', 'れ', 'ら'] },
-            { q: 'い', a: 'i', opts: ['i', 'e', 'u', 'o'] },
-            { q: 'く', a: 'ku', opts: ['ku', 'ka', 'ki', 'ko'] },
-            { q: 'し', a: 'shi', opts: ['shi', 'chi', 'tsu', 'su'] },
-            { q: 'ね', a: 'ne', opts: ['ne', 're', 'me', 'wa'] },
-            { q: 'へ', a: 'he', opts: ['he', 'pe', 'be', 'ne'] },
-            { q: 'み', a: 'mi', opts: ['mi', 'ni', 'bi', 'pi'] },
-            { q: 'よ', a: 'yo', opts: ['yo', 'yu', 'ya', 'ro'] }
+          { "q": "がっこう", "a": "gakkou", "opts": ["gakkou", "kakken", "ganou", "kakko"] },
+          { "q": "きっぷ", "a": "kippu", "opts": ["kippu", "kipu", "gippo", "shippu"] },
+          { "q": "びょういん", "a": "byouin", "opts": ["byouin", "boin", "booin", "byouen"] },
+          { "q": "じしゃく", "a": "jishaku", "opts": ["jishaku", "jisaku", "chishaku", "jishika"] },
+          { "q": "えんぴつ", "a": "enpitsu", "opts": ["enpitsu", "embisu", "inpiku", "obito"] },
+          { "q": "じしょ", "a": "jisho", "opts": ["jisho", "shoshi", "shijo", "chisho"] },
+          { "q": "おちゃ", "a": "ocha", "opts": ["ocha", "ochi", "acha", "osa"] },
+          { "q": "きんぎょ", "a": "kingyo", "opts": ["kingyo", "kingio", "gingo", "gingyu"] },
+          { "q": "ざっし", "a": "zasshi", "opts": ["zasshi", "pachi", "sashi", "zassu"] },
+          { "q": "てんき", "a": "tenki", "opts": ["tenki", "teki", "doki", "densa"] },
+          { "q": "ショッピング", "a": "shoppingu", "opts": ["shoppingu", "shibinku", "shopping", "soppingu"] },
+          { "q": "コップ", "a": "koppu", "opts": ["koppu", "koppi", "yoppo", "goppu"] },
+          { "q": "ジュース", "a": "juusu", "opts": ["juusu", "jutsu", "kyuusu", "tsuusu"] },
+          { "q": "ベッド", "a": "beddo", "opts": ["beddo", "beto", "hiado", "pesso"] },
+          { "q": "パソコン", "a": "pasokon", "opts": ["pasokon", "pashokon", "tasoko", "bakoson"] },
+          { "q": "シャツ", "a": "shatsu", "opts": ["shatsu", "sasu", "chasu", "susu"] },
+          { "q": "チョコレート", "a": "chokoreeto", "opts": ["chokoreeto", "chokoratsu", "shokoretto", "tokoreeto"] },
+          { "q": "ジョギング", "a": "jogingu", "opts": ["jogingu", "shoogingu", "joginguyu", "chogingu"] },
+          { "q": "マッチ", "a": "macchi", "opts": ["matcha", "machi", "matte", "macchi"] },
+          { "q": "ホテル", "a": "hoteru", "opts": ["hoteru", "hochiru", "moteru", "boteru"] }
         ];
 
-        // Exactly 10 questions for Part B (Combined Words)
         const partB_Data = [
-            { q: 'Inu', a: 'いぬ', opts: ['いぬ', 'ねこ', 'とり', 'さる'] },
-            { q: 'Saka', a: 'さか', opts: ['さか', 'かさ', 'かわ', 'うみ'] },
-            { q: 'Kasa', a: 'かさ', opts: ['かさ', 'くつ', 'ふく', 'ほん'] },
-            { q: 'Hito', a: 'ひと', opts: ['ひと', 'こと', 'もの', 'ほか'] },
-            { q: 'Mise', a: 'みせ', opts: ['みせ', 'いえ', 'まち', 'えき'] },
-            { q: 'あめ', a: 'Ame', opts: ['Ame', 'Yume', 'Kumo', 'Sora'] },
-            { q: 'そら', a: 'Sora', opts: ['Sora', 'Umi', 'Yama', 'Kawa'] },
-            { q: 'つくえ', a: 'Tsukue', opts: ['Tsukue', 'Isu', 'Tokei', 'Kabe'] },
-            { q: 'さくら', a: 'Sakura', opts: ['Sakura', 'Kiku', 'Yuri', 'Ume'] },
-            { q: 'ひかり', a: 'Hikari', opts: ['Hikari', 'Kagami', 'Kage', 'Yami'] }
+            { q: 'きっさてん', a: 'キッサテン', opts: ['キッサテン', 'レストラン', 'カフェ', 'キッセテン'] },
+            { q: 'おんがく', a: 'オンガク', opts: ['オンガク', 'オカク', 'オンガコ', 'オンナ'] },
+            { q: 'でんき', a: 'デンキ', opts: ['デンキ', 'テレカ', 'ラジオ', 'テキ'] },
+            { q: 'そっか', a: 'ソッカ', opts: ['ソッカ', 'ソフット', 'テッカ', 'ソカ'] },
+            { q: 'ぎんこう', a: 'ギンコウ', opts: ['ギンコウ', 'デパート', 'スーパー', 'カントウ'] },
+            { q: 'ムカシ', a: 'むかし', opts: ['むたつ', 'むかし', 'めもり', 'まきま'] },
+            { q: 'バス', a: 'ばす', opts: ['ばす', 'くるま', 'ばせ', 'はつ'] },
+            { q: 'コンピュータ', a: 'こんぴゅうた', opts: ['こんぴょうた', 'こんぴゅうた', 'こぴたあ', 'とびゅうなあ'] },
+            { q: 'スポーツ', a: 'すぽおつ', opts: ['すぽおつ', 'すぱい', 'すうぱあ', 'ぬぱつ'] },
+            { q: 'ワクワク', a: 'わくわく', opts: ['わけわけ', 'くわくわ', 'わくわく', 'ふけふけ'] }
         ];
 
         const finalGroups = {
-            A: ['katachi', 'heya', 'mosawo', 'yuki', 'yakuza', 'Oosaka', 'sakini', 'samurai', 'mitsuha', 'kanari'],
-            B: ['Sakura', 'haru', 'yasumi', 'rouka', 'tsunami', 'sansei', 'chiisana', 'Mamoru', 'neko', 'shimawo']
+            A: ['いぬが はしってます。', 'ねこは ねています。', 'きょうは あついです。', 'でんしゃが きました。', 'ほんを かいました。', 'テレビヲ ミマシタ。', 'パンヲ タベマシタ。', 'オチャヲ ノミマス。', 'バナナヲ タベマス。', 'ホテルニトマリマス。'],
+            B: ['かわで およぎます。', 'はなを みます。', 'しんぶんを よみます。', 'ぎんこうへ いきます。', 'おんがくを ききます。', 'ベンキョウシマス。', 'テレビヲ ミマシタ。', 'カメラヲ トリマシタ。', 'レストランデ タベマス。', 'デンシャニ ノリマス。']
         };
 
         const bgColors = ['bg-red', 'bg-blue', 'bg-yellow', 'bg-green'];
 
-        /* --- UTILITY FUNCTIONS --- */
         const showScreen = (screenId) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            
-            const progressWrapper = document.getElementById('quiz-progress-wrapper');
-            if (screenId === 'screen-question' || screenId === 'screen-final') {
-                progressWrapper.style.display = 'flex';
-            } else {
-                progressWrapper.style.display = 'none';
-            }
+            const p = document.getElementById('quiz-progress-wrapper');
+            p.style.display = (screenId === 'screen-question' || screenId === 'screen-final') ? 'flex' : 'none';
         };
 
-        const shuffleArray = (array) => {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
+        const shuffleArray = (arr) => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
+                [a[i], a[j]] = [a[j], a[i]];
             }
-            return arr;
+            return a;
         };
 
-        const clearGlobalTimer = () => {
-            if (state.timerInterval) {
-                clearInterval(state.timerInterval);
-                state.timerInterval = null;
-            }
-        };
-
-        const updateProgressBar = (current, total) => {
-            const percentage = ((current) / total) * 100;
-            document.getElementById('progress-bar').style.width = `${percentage}%`;
-            document.getElementById('step-label').innerText = `${current} / ${total}`;
-        };
-
-        /* --- CORE APPLICATION FLOW --- */
         function startApp() {
-            const selectedGroup = document.querySelector('input[name="group"]:checked').value;
-            state.groupSelection = selectedGroup;
+            state.groupSelection = document.querySelector('input[name="group"]:checked').value;
             state.scores = { partA: 0, partB: 0 };
             state.wrongAnswers = [];
-            
-            // Generate randomized session copies for both sets of questions
+            state.midBreakTaken = false;
+            state.midBreakTakenFinal = false;
             state.shuffledPartA = shuffleArray(partA_Data);
             state.shuffledPartB = shuffleArray(partB_Data);
-            
             startTransitionA();
         }
 
-        /* TRANSITION SCREENS */
         function startTransitionA() {
             showScreen('screen-transition');
-            document.getElementById('transition-title').style.display = 'none';
-            document.getElementById('transition-subtitle').innerText = "The test begins in...";
             runDualPhaseTransition(0, 5, 'PART_A');
         }
 
-        function startTransitionB() {
-            showScreen('screen-transition');
-            document.getElementById('transition-title').style.display = 'block';
-            document.getElementById('transition-title').innerText = "Breaktime";
-            document.getElementById('transition-subtitle').innerText = "";
-            runDualPhaseTransition(20, 5, 'PART_B');
-        }
-
-        function startTransitionC() {
-            showScreen('screen-transition');
-            document.getElementById('transition-title').style.display = 'block';
-            document.getElementById('transition-title').innerText = "Breaktime";
-            document.getElementById('transition-subtitle').innerText = "";
-            runDualPhaseTransition(20, 5, 'FINAL');
-        }
-
         function runDualPhaseTransition(breakSeconds, countdownSeconds, nextPhase) {
-            clearGlobalTimer();
+            if(state.timerInterval) clearInterval(state.timerInterval);
             const timerEl = document.getElementById('transition-timer');
             const titleEl = document.getElementById('transition-title');
             const subEl = document.getElementById('transition-subtitle');
-            timerEl.classList.remove('pulse');
-
             let phase = breakSeconds > 0 ? 'BREAK' : 'COUNTDOWN';
             let timeRemaining = phase === 'BREAK' ? breakSeconds : countdownSeconds;
-            
-            if (phase === 'BREAK') {
-                titleEl.innerText = "Breaktime";
-                subEl.innerText = "Take a breath!";
-            } else {
-                titleEl.style.display = 'none';
-                if (nextPhase === 'PART_B') {
-                    subEl.innerText = "Part B begins in...";
-                } else if (nextPhase === 'FINAL') {
-                    subEl.innerText = "Final part begins in...";
-                } else {
-                    subEl.innerText = "The test begins in...";
-                }
-            }
-
             const tick = () => {
                 timerEl.innerText = timeRemaining;
-                
-                if (phase === 'COUNTDOWN' && timeRemaining <= 3) {
-                    timerEl.classList.add('pulse');
-                }
-
                 if (timeRemaining === 0) {
                     if (phase === 'BREAK') {
-                        phase = 'COUNTDOWN';
-                        timeRemaining = countdownSeconds;
+                        phase = 'COUNTDOWN'; timeRemaining = countdownSeconds;
                         titleEl.style.display = 'none';
-                        if (nextPhase === 'PART_B') {
-                            subEl.innerText = "Part B begins in...";
-                        } else if (nextPhase === 'FINAL') {
-                            subEl.innerText = "Final part begins in...";
-                        } else {
-                            subEl.innerText = "The test begins in...";
-                        }
-                        timerEl.classList.remove('pulse');
-                    } else if (phase === 'COUNTDOWN') {
-                        clearGlobalTimer();
-                        titleEl.style.display = 'block';
-                        titleEl.innerText = "Ready!";
-                        timerEl.innerText = "";
-                        subEl.innerText = "";
+                    } else {
+                        clearInterval(state.timerInterval);
                         setTimeout(() => routeToPhase(nextPhase), 1000);
                         return;
                     }
-                } else {
-                    timeRemaining--;
-                }
+                } else timeRemaining--;
             };
-            
             tick();
             state.timerInterval = setInterval(tick, 1000);
         }
@@ -652,206 +556,81 @@
         function routeToPhase(phase) {
             state.currentPart = phase;
             state.currentIndex = 0;
-            if (phase === 'PART_A') {
-                document.getElementById('question-header').innerText = `PART A: HIRAGANA & ROMAJI`;
-                showScreen('screen-question');
-                renderQuestion();
-            } else if (phase === 'PART_B') {
-                document.getElementById('question-header').innerText = `PART B: COMBINED WORDS`;
-                showScreen('screen-question');
-                renderQuestion();
-            } else if (phase === 'FINAL') {
-                showScreen('screen-final');
-                renderFinalQuestion();
-            }
+            showScreen(phase.includes('FINAL') ? 'screen-final' : 'screen-question');
+            phase.includes('FINAL') ? renderFinalQuestion() : renderQuestion();
         }
 
-        /* --- QUESTION LOGIC (PARTS A & B) --- */
         function renderQuestion() {
-            clearGlobalTimer();
-            state.isAnswering = false;
-            
+            if(state.timerInterval) clearInterval(state.timerInterval);
             const isPartA = state.currentPart === 'PART_A';
-            const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
-            const timeLimit = isPartA ? 5 : 8; // Part A: 5s, Part B: 8s
-            
-            if (state.currentIndex >= dataSet.length) {
-                return isPartA ? startTransitionB() : startTransitionC();
+            if (isPartA && state.currentIndex === 10 && !state.midBreakTaken) {
+                state.midBreakTaken = true;
+                return startTransitionAMid();
             }
-
-            updateProgressBar(state.currentIndex + 1, dataSet.length);
-
-            const currentQ = dataSet[state.currentIndex];
-            document.getElementById('question-display').innerText = currentQ.q;
+            const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
+            if (state.currentIndex >= dataSet.length) return isPartA ? startTransitionB() : startTransitionC();
             
-            const timerEl = document.getElementById('question-timer');
-            timerEl.innerText = timeLimit;
-            timerEl.classList.remove('pulse');
-
+            document.getElementById('progress-bar').style.width = `${((state.currentIndex + 1) / dataSet.length) * 100}%`;
+            document.getElementById('step-label').innerText = `${state.currentIndex + 1} / ${dataSet.length}`;
+            document.getElementById('question-display').innerText = dataSet[state.currentIndex].q;
+            
             const container = document.getElementById('choices-container');
             container.innerHTML = '';
-            
-            const shuffledOpts = shuffleArray(currentQ.opts);
-            shuffledOpts.forEach((opt, idx) => {
+            shuffleArray(dataSet[state.currentIndex].opts).forEach((opt, i) => {
                 const btn = document.createElement('button');
-                // Append 'part-a-btn' for single kana font scaling safely
-                btn.className = `choice-btn ${bgColors[idx]} ${isPartA ? 'part-a-btn' : ''}`;
+                btn.className = `choice-btn ${bgColors[i]}`;
                 btn.innerText = opt;
-                btn.onclick = () => handleChoice(btn, opt, currentQ.a);
+                btn.onclick = () => handleChoice(opt, dataSet[state.currentIndex].a);
                 container.appendChild(btn);
             });
-
-            let timeLeft = timeLimit;
+            
+            let time = isPartA ? 8 : 12;
+            document.getElementById('question-timer').innerText = time;
             state.timerInterval = setInterval(() => {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
-                if (timeLeft <= 3) timerEl.classList.add('pulse');
-                if (timeLeft <= 0) {
-                    clearGlobalTimer();
-                    handleChoice(null, null, currentQ.a); 
-                }
+                time--;
+                document.getElementById('question-timer').innerText = time;
+                if(time <= 0) { clearInterval(state.timerInterval); handleChoice(null, dataSet[state.currentIndex].a); }
             }, 1000);
         }
 
-        function handleChoice(clickedBtn, selectedAns, correctAns) {
-            if (state.isAnswering) return;
-            state.isAnswering = true;
-            clearGlobalTimer();
-
-            const isPartA = state.currentPart === 'PART_A';
-            const isCorrect = selectedAns === correctAns;
-            
-            if (isCorrect) {
-                if (isPartA) state.scores.partA++;
-                else state.scores.partB++;
+        function handleChoice(selected, correct) {
+            clearInterval(state.timerInterval);
+            if(selected === correct) {
+                if(state.currentPart === 'PART_A') state.scores.partA++;
+                else state.scores.partB += 2;
             } else {
-                const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
-                const activeQuestion = dataSet[state.currentIndex].q;
-                state.wrongAnswers.push({
-                    part: isPartA ? 'Part A' : 'Part B',
-                    q: activeQuestion,
-                    user: selectedAns || 'Timed Out',
-                    correct: correctAns
-                });
+                state.wrongAnswers.push({ part: state.currentPart, q: (state.currentPart === 'PART_A' ? state.shuffledPartA : state.shuffledPartB)[state.currentIndex].q, user: selected || 'Timeout', correct });
             }
-
-            // Disable all buttons and show a neutral selection feedback (no green/red hints)
-            const buttons = document.querySelectorAll('.choice-btn');
-            buttons.forEach(btn => {
-                btn.disabled = true;
-                if (btn === clickedBtn) {
-                    // Highlight selected option neutrally with a scaling and subtle outline
-                    btn.style.transform = 'scale(0.98)';
-                    btn.style.boxShadow = '0 0 0 4px #ffffff, 0 4px 12px rgba(0,0,0,0.15)';
-                } else {
-                    // Dim non-selected options
-                    btn.style.opacity = '0.3';
-                    btn.style.filter = 'grayscale(0.5)';
-                }
-            });
-
-            setTimeout(() => {
-                state.currentIndex++;
-                renderQuestion();
-            }, 1000);
+            state.currentIndex++;
+            renderQuestion();
         }
 
-        /* --- FINAL ROUND LOGIC --- */
         function renderFinalQuestion() {
-            clearGlobalTimer();
-            state.isAnswering = false;
-
-            const finalData = finalGroups[state.groupSelection];
-            
-            if (state.currentIndex >= finalData.length) {
-                return showResults();
-            }
-
-            updateProgressBar(state.currentIndex + 1, finalData.length);
-
-            document.getElementById('final-display').innerText = finalData[state.currentIndex];
-            
-            const timerEl = document.getElementById('question-timer');
-            let timeLeft = 10;
-            timerEl.innerText = timeLeft;
-            timerEl.classList.remove('pulse');
-
+            if(state.timerInterval) clearInterval(state.timerInterval);
+            if(state.currentIndex === 5 && !state.midBreakTakenFinal) { state.midBreakTakenFinal = true; return startTransitionCMid(); }
+            const data = finalGroups[state.groupSelection];
+            if (state.currentIndex >= data.length) return showResults();
+            document.getElementById('final-display').innerText = data[state.currentIndex];
+            let time = 20;
             state.timerInterval = setInterval(() => {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
-                if (timeLeft <= 3) timerEl.classList.add('pulse');
-                if (timeLeft <= 0) {
-                    clearGlobalTimer();
-                    state.currentIndex++;
-                    renderFinalQuestion();
-                }
+                time--;
+                document.getElementById('question-timer').innerText = time;
+                if(time <= 0) { clearInterval(state.timerInterval); state.currentIndex++; renderFinalQuestion(); }
             }, 1000);
         }
 
-        /* --- SCORE CALCULATOR & RESULTS VIEW --- */
         function showResults() {
             showScreen('screen-results');
-            
-            const aMax = partA_Data.length;
-            const bMax = partB_Data.length;
-            
-            const aPerc = Math.round((state.scores.partA / aMax) * 100);
-            const bPerc = Math.round((state.scores.partB / bMax) * 100);
-
-            // Dynamic Weightage Formula: Part A is 1 point, Part B is 2 points
-            const totalScore = (state.scores.partA * 1) + (state.scores.partB * 2);
-            const totalMax = (aMax * 1) + (bMax * 2);
-            const totalPerc = Math.round((totalScore / totalMax) * 100);
-
-            document.getElementById('score-a').innerText = `${state.scores.partA} / ${aMax} (${aPerc}%)`;
-            document.getElementById('score-b').innerText = `${state.scores.partB} / ${bMax} (${bPerc}%)`;
-            
-            const scoreTotalEl = document.getElementById('score-total');
-            scoreTotalEl.innerText = `${totalPerc}%`;
-
-            // Style total accuracy score color:
-            // 0% - 49% -> Red | 50% - 79% -> Orange | 80% - 100% -> Green
-            if (totalPerc <= 49) {
-                scoreTotalEl.style.color = '#ef4444'; // Red
-            } else if (totalPerc <= 79) {
-                scoreTotalEl.style.color = '#f59e0b'; // Orange
-            } else {
-                scoreTotalEl.style.color = '#10b981'; // Green
-            }
-
-            const wrongSection = document.getElementById('wrong-review-section');
-            const wrongScrollList = document.getElementById('wrong-scroll-list');
-            wrongScrollList.innerHTML = '';
-
-            if (state.wrongAnswers.length > 0) {
-                wrongSection.style.display = 'block';
-                state.wrongAnswers.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'wrong-card';
-                    card.innerHTML = `
-                        <div>
-                            <span style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 2px;">
-                                ${item.part}
-                            </span>
-                            <span class="wrong-card-prompt">${item.q}</span>
-                        </div>
-                        <div class="wrong-card-details">
-                            <span class="details-badge-wrong">${item.user}</span>
-                            <span class="details-badge-correct">${item.correct}</span>
-                        </div>
-                    `;
-                    wrongScrollList.appendChild(card);
-                });
-            } else {
-                wrongSection.style.display = 'none';
-            }
+            document.getElementById('score-a').innerText = `${state.scores.partA} / 20 pts`;
+            document.getElementById('score-b').innerText = `${state.scores.partB} / 20 pts`;
+            document.getElementById('score-total').innerText = `${state.scores.partA + state.scores.partB} / 40`;
         }
 
-        function resetApp() {
-            clearGlobalTimer();
-            showScreen('screen-menu');
-        }
-
+        function resetApp() { showScreen('screen-menu'); }
+        function startTransitionAMid() { showScreen('screen-transition'); runDualPhaseTransition(15, 5, 'PART_A'); }
+        function startTransitionB() { showScreen('screen-transition'); runDualPhaseTransition(20, 5, 'PART_B'); }
+        function startTransitionC() { showScreen('screen-transition'); runDualPhaseTransition(20, 5, 'FINAL'); }
+        function startTransitionCMid() { showScreen('screen-transition'); runDualPhaseTransition(15, 5, 'FINAL'); }
     </script>
 </body>
 </html>
