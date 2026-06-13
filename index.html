@@ -226,8 +226,8 @@
         .choice-btn {
             color: white;
             border: none;
-            padding: 24px 15px;
-            font-size: 1.4rem;
+            padding: 24px 10px;
+            font-size: 1.3rem;
             font-weight: 700;
             border-radius: 18px;
             cursor: pointer;
@@ -240,6 +240,7 @@
             gap: 6px;
             position: relative;
             overflow: hidden;
+            word-break: break-word;
         }
         .choice-btn:hover:not(:disabled) {
             transform: translateY(-3px);
@@ -255,7 +256,17 @@
         .choice-btn.bg-green { background: linear-gradient(135deg, #34d399, var(--k-green)); }
         
         .choice-btn:disabled { cursor: default; }
-        
+        .correct-answer {
+            transform: scale(1.02) !important;
+            filter: brightness(1.05);
+            box-shadow: 0 0 0 4px #ffffff, 0 0 20px var(--k-green) !important;
+            z-index: 2;
+        }
+        .wrong-answer {
+            opacity: 0.25;
+            filter: grayscale(0.5) scale(0.95);
+        }
+
         .results-box {
             background-color: #f8fafc;
             padding: 24px;
@@ -351,12 +362,13 @@
                 border-radius: 20px;
             }
             h1 { font-size: 1.8rem; }
-            .question-text { font-size: 3.2rem; margin: 15px 0; }
+            .question-text { font-size: 2.8rem; margin: 15px 0; }
             .choices-grid { gap: 12px; }
-            .choice-btn { padding: 18px 10px; font-size: 1.15rem; border-radius: 14px; }
+            .choice-btn { padding: 16px 8px; font-size: 1.1rem; border-radius: 14px; }
             .timer-badge { width: 56px; height: 56px; font-size: 1.3rem; }
             .radio-group { flex-direction: column; gap: 8px; margin-bottom: 20px; }
             .radio-group label { padding: 12px; font-size: 1rem; }
+            #final-display { font-size: 1.8rem !important; }
         }
     </style>
 </head>
@@ -402,7 +414,7 @@
 
         <!-- Question Screen (Part A & B) -->
         <div id="screen-question" class="screen">
-            <h2 id="question-header" style="text-align: left; font-size: 1rem;">PART A</h2>
+            <h2 id="question-header" style="text-align: left; font-size: 1rem;">Part A: KANA to ROMAJI</h2>
             <div class="question-text" id="question-display">あ</div>
             
             <div class="choices-grid" id="choices-container">
@@ -412,9 +424,9 @@
 
         <!-- Final Question Screen -->
         <div id="screen-final" class="screen">
-            <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--k-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">FINAL PART:</h2>
-            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 25px; line-height: 1.4;">Convert Hiragana to Katakana & Katakana to  Hiragana and write down the answer on paper.</h3>
-            <div class="question-text" id="final-display" style="font-size: 2.2rem; margin: 30px 0; line-height: 1.3;">Word</div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--k-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">PART C:</h2>
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 25px; line-height: 1.4;">Convert Hiragana to Katakana & Katakana to Hiragana and write down the answer on paper.</h3>
+            <div class="question-text" id="final-display" style="font-size: 2.2rem; margin: 30px 0; line-height: 1.35; word-break: break-word;">Word</div>
         </div>
 
         <!-- Results Screen -->
@@ -422,16 +434,19 @@
             <h1>Results</h1>
             
             <div class="results-box">
-                <div><span>Part A</span> <strong id="score-a">0 / 20 pts</strong></div>
-                <div><span>Part B</span> <strong id="score-b">0 / 20 pts</strong></div>
+                <div><span>Part A (1 pt each)</span> <strong id="score-a">0 / 20 correct (0 pts)</strong></div>
+                <div><span>Part B (2 pts each)</span> <strong id="score-b">0 / 10 correct (0 pts)</strong></div>
                 <div style="border-bottom: none; font-size: 1.35rem; margin-top: 18px; padding-top: 12px; border-top: 2px solid var(--border-color);">
-                    <span>Total</span> <strong id="score-total" style="font-size: 1.6rem;">0 / 40</strong>
+                    <span>Total Score</span> <strong id="score-total" style="font-size: 1.6rem;">0 pts (0%)</strong>
                 </div>
             </div>
 
+            <!-- Mistakes revision panel -->
             <div id="wrong-review-section" class="wrong-review-container" style="display: none;">
                 <h3 class="wrong-review-title">Revision</h3>
-                <div class="wrong-scroll-area" id="wrong-scroll-list"></div>
+                <div class="wrong-scroll-area" id="wrong-scroll-list">
+                    <!-- Wrong answers cards dynamically loaded here -->
+                </div>
             </div>
 
             <button class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="resetApp()">Home</button>
@@ -440,43 +455,45 @@
     </div>
 
     <script>
+        /* --- STATE & DATA --- */
         let state = {
             groupSelection: 'A',
             scores: { partA: 0, partB: 0 },
-            wrongAnswers: [], 
-            currentPart: '', 
+            wrongAnswers: [], // Holds mistakes: { part, q, selected, correct }
+            currentPart: '', // 'PART_A', 'PART_B', 'FINAL'
             currentIndex: 0,
+            hasPartABreakHappened: false,
             timerInterval: null,
             isAnswering: false,
-            midBreakTaken: false, 
-            midBreakTakenFinal: false, 
             shuffledPartA: [],
             shuffledPartB: []
         };
 
+        // Part A Dataset (20 Questions)
         const partA_Data = [
-          { "q": "がっこう", "a": "gakkou", "opts": ["gakkou", "kakken", "ganou", "kakko"] },
-          { "q": "きっぷ", "a": "kippu", "opts": ["kippu", "kipu", "gippo", "shippu"] },
-          { "q": "びょういん", "a": "byouin", "opts": ["byouin", "boin", "booin", "byouen"] },
-          { "q": "じしゃく", "a": "jishaku", "opts": ["jishaku", "jisaku", "chishaku", "jishika"] },
-          { "q": "えんぴつ", "a": "enpitsu", "opts": ["enpitsu", "embisu", "inpiku", "obito"] },
-          { "q": "じしょ", "a": "jisho", "opts": ["jisho", "shoshi", "shijo", "chisho"] },
-          { "q": "おちゃ", "a": "ocha", "opts": ["ocha", "ochi", "acha", "osa"] },
-          { "q": "きんぎょ", "a": "kingyo", "opts": ["kingyo", "kingio", "gingo", "gingyu"] },
-          { "q": "ざっし", "a": "zasshi", "opts": ["zasshi", "pachi", "sashi", "zassu"] },
-          { "q": "てんき", "a": "tenki", "opts": ["tenki", "teki", "doki", "densa"] },
-          { "q": "ショッピング", "a": "shoppingu", "opts": ["shoppingu", "shibinku", "shopping", "soppingu"] },
-          { "q": "コップ", "a": "koppu", "opts": ["koppu", "koppi", "yoppo", "goppu"] },
-          { "q": "ジュース", "a": "juusu", "opts": ["juusu", "jutsu", "kyuusu", "tsuusu"] },
-          { "q": "ベッド", "a": "beddo", "opts": ["beddo", "beto", "hiado", "pesso"] },
-          { "q": "パソコン", "a": "pasokon", "opts": ["pasokon", "pashokon", "tasoko", "bakoson"] },
-          { "q": "シャツ", "a": "shatsu", "opts": ["shatsu", "sasu", "chasu", "susu"] },
-          { "q": "チョコレート", "a": "chokoreeto", "opts": ["chokoreeto", "chokoratsu", "shokoretto", "tokoreeto"] },
-          { "q": "ジョギング", "a": "jogingu", "opts": ["jogingu", "shoogingu", "joginguyu", "chogingu"] },
-          { "q": "マッチ", "a": "macchi", "opts": ["matcha", "machi", "matte", "macchi"] },
-          { "q": "ホテル", "a": "hoteru", "opts": ["hoteru", "hochiru", "moteru", "boteru"] }
+            { "q": "がっこう", "a": "gakkou", "opts": ["gakkou", "kakken", "ganou", "kakko"] },
+            { "q": "きっぷ", "a": "kippu", "opts": ["kippu", "kipu", "gippo", "shippu"] },
+            { "q": "びょういん", "a": "byouin", "opts": ["byouin", "boin", "booin", "byouen"] },
+            { "q": "じしゃく", "a": "jishaku", "opts": ["jishaku", "jisaku", "chishaku", "jishika"] },
+            { "q": "えんぴつ", "a": "enpitsu", "opts": ["enpitsu", "embisu", "inpiku", "obito"] },
+            { "q": "じしょ", "a": "jisho", "opts": ["jisho", "shoshi", "shijo", "chisho"] },
+            { "q": "おちゃ", "a": "ocha", "opts": ["ocha", "ochi", "acha", "osa"] },
+            { "q": "きんぎょ", "a": "kingyo", "opts": ["kingyo", "kingio", "gingo", "gingyu"] },
+            { "q": "ざっし", "a": "zasshi", "opts": ["zasshi", "pachi", "sashi", "zassu"] },
+            { "q": "てんき", "a": "tenki", "opts": ["tenki", "teki", "doki", "densa"] },
+            { "q": "ショッピング", "a": "shoppingu", "opts": ["shoppingu", "shibinku", "shopping", "soppingu"] },
+            { "q": "コップ", "a": "koppu", "opts": ["koppu", "koppi", "yoppo", "goppu"] },
+            { "q": "ジュース", "a": "juusu", "opts": ["juusu", "jutsu", "kyuusu", "tsuusu"] },
+            { "q": "ベッド", "a": "beddo", "opts": ["beddo", "beto", "hiado", "pesso"] },
+            { "q": "パソコン", "a": "pasokon", "opts": ["pasokon", "pashokon", "tasoko", "bakoson"] },
+            { "q": "シャツ", "a": "shatsu", "opts": ["shatsu", "sasu", "chasu", "susu"] },
+            { "q": "チョコレート", "a": "chokoreeto", "opts": ["chokoreeto", "chokoratsu", "shokoretto", "tokoreeto"] },
+            { "q": "ジョギング", "a": "jogingu", "opts": ["jogingu", "shoogingu", "joginguyu", "chogingu"] },
+            { "q": "マッチ", "a": "macchi", "opts": ["matcha", "machi", "matte", "macchi"] },
+            { "q": "ホテル", "a": "hoteru", "opts": ["hoteru", "hochiru", "moteru", "boteru"] }
         ];
 
+        // Part B Dataset (10 Questions)
         const partB_Data = [
             { q: 'きっさてん', a: 'キッサテン', opts: ['キッサテン', 'レストラン', 'カフェ', 'キッセテン'] },
             { q: 'おんがく', a: 'オンガク', opts: ['オンガク', 'オカク', 'オンガコ', 'オンナ'] },
@@ -490,147 +507,376 @@
             { q: 'ワクワク', a: 'わくわく', opts: ['わけわけ', 'くわくわ', 'わくわく', 'ふけふけ'] }
         ];
 
+        // Final Round Configurations (10 sentences per Group)
         const finalGroups = {
-            A: ['いぬが はしってます。', 'ねこは ねています。', 'きょうは あついです。', 'でんしゃが きました。', 'ほんを かいました。', 'テレビヲ ミマシタ。', 'パンヲ タベマシタ。', 'オチャヲ ノミマス。', 'バナナヲ タベマス。', 'ホテルニトマリマス。'],
-            B: ['かわで およぎます。', 'はなを みます。', 'しんぶんを よみます。', 'ぎんこうへ いきます。', 'おんがくを ききます。', 'ベンキョウシマス。', 'テレビヲ ミマシタ。', 'カメラヲ トリマシタ。', 'レストランデ タベマス。', 'デンシャニ ノリマス。']
+            A: [
+                'いぬが はしってます。',
+                'ねこは ねています。',
+                'きょうは あついです。',
+                'でんしゃが きました。',
+                'ほんを かいました。',
+                'テレビヲ ミマシタ。',
+                'パンヲ タベマシタ。',
+                'オチャヲ ノミマス。',
+                'バナナヲ タベマス。',
+                'ホテルニトマリマス。'
+            ],
+            B: [
+                'かわで およぎます。',
+                'はなを みます。',
+                'しんぶんを よみます。',
+                'ぎんこうへ いきます。',
+                'おんがくを ききます。',
+                'ベンキョウシマス。',
+                'テレビヲ ミマシタ。',
+                'カメラヲ トリマシタ。',
+                'レストランデ タベマス。',
+                'デンシャニ ノリマス。'
+            ]
         };
 
         const bgColors = ['bg-red', 'bg-blue', 'bg-yellow', 'bg-green'];
 
+        /* --- UTILITY FUNCTIONS --- */
         const showScreen = (screenId) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            const p = document.getElementById('quiz-progress-wrapper');
-            p.style.display = (screenId === 'screen-question' || screenId === 'screen-final') ? 'flex' : 'none';
-        };
-
-        const shuffleArray = (arr) => {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
+            
+            const progressWrapper = document.getElementById('quiz-progress-wrapper');
+            if (screenId === 'screen-question' || screenId === 'screen-final') {
+                progressWrapper.style.display = 'flex';
+            } else {
+                progressWrapper.style.display = 'none';
             }
-            return a;
         };
 
+        const shuffleArray = (array) => {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
+        const clearGlobalTimer = () => {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        };
+
+        const updateProgressBar = (current, total) => {
+            const percentage = ((current) / total) * 100;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('step-label').innerText = `${current} / ${total}`;
+        };
+
+        /* --- CORE APPLICATION FLOW --- */
         function startApp() {
-            state.groupSelection = document.querySelector('input[name="group"]:checked').value;
+            const selectedGroup = document.querySelector('input[name="group"]:checked').value;
+            state.groupSelection = selectedGroup;
             state.scores = { partA: 0, partB: 0 };
             state.wrongAnswers = [];
-            state.midBreakTaken = false;
-            state.midBreakTakenFinal = false;
+            state.hasPartABreakHappened = false;
+            
+            // Randomize and shuffle questions for Parts A and B on launch
             state.shuffledPartA = shuffleArray(partA_Data);
             state.shuffledPartB = shuffleArray(partB_Data);
+            
             startTransitionA();
         }
 
+        /* TRANSITION SCREENS */
         function startTransitionA() {
             showScreen('screen-transition');
-            runDualPhaseTransition(0, 5, 'PART_A');
+            runDualPhaseTransition(5, "", "The exam begins in...", 0, "", "", 'PART_A');
         }
 
-        function runDualPhaseTransition(breakSeconds, countdownSeconds, nextPhase) {
-            if(state.timerInterval) clearInterval(state.timerInterval);
+        function startTransitionA_Halfway() {
+            showScreen('screen-transition');
+            // Give a 15-second break first, followed by a 5-second countdown to resume
+            runDualPhaseTransition(15, "Breaktime", "Take a breath!", 5, "", "Part A resumes in...", 'PART_A_RESUME');
+        }
+
+        function startTransitionB() {
+            showScreen('screen-transition');
+            // Give a 15-second break first, followed by a 5-second countdown to Part B
+            runDualPhaseTransition(15, "Breaktime", "Take a breath!", 5, "", "Part B begins in...", 'PART_B');
+        }
+
+        function startTransitionC() {
+            showScreen('screen-transition');
+            // As requested: After 5 seconds, give a 15-second break.
+            runDualPhaseTransition(5, "", "Part C begins in...", 15, "Breaktime", "Take a breath!", 'FINAL');
+        }
+
+        /* DUAL-PHASE TIMED TRANSITIONS CONTROLLER */
+        function runDualPhaseTransition(phase1Time, phase1Title, phase1Sub, phase2Time, phase2Title, phase2Sub, nextPhase) {
+            clearGlobalTimer();
             const timerEl = document.getElementById('transition-timer');
             const titleEl = document.getElementById('transition-title');
             const subEl = document.getElementById('transition-subtitle');
-            let phase = breakSeconds > 0 ? 'BREAK' : 'COUNTDOWN';
-            let timeRemaining = phase === 'BREAK' ? breakSeconds : countdownSeconds;
+            timerEl.classList.remove('pulse');
+
+            let currentPhase = 1;
+            let timeRemaining = phase1Time;
+
+            titleEl.style.display = phase1Title ? 'block' : 'none';
+            titleEl.innerText = phase1Title || '';
+            subEl.innerText = phase1Sub || '';
+            timerEl.innerText = timeRemaining;
+
             const tick = () => {
-                timerEl.innerText = timeRemaining;
-                if (timeRemaining === 0) {
-                    if (phase === 'BREAK') {
-                        phase = 'COUNTDOWN'; timeRemaining = countdownSeconds;
-                        titleEl.style.display = 'none';
+                if (timeRemaining <= 0) {
+                    if (currentPhase === 1 && phase2Time > 0) {
+                        currentPhase = 2;
+                        timeRemaining = phase2Time;
+                        titleEl.style.display = phase2Title ? 'block' : 'none';
+                        titleEl.innerText = phase2Title || '';
+                        subEl.innerText = phase2Sub || '';
+                        timerEl.innerText = timeRemaining;
+                        timerEl.classList.remove('pulse');
                     } else {
-                        clearInterval(state.timerInterval);
+                        clearGlobalTimer();
+                        titleEl.style.display = 'block';
+                        titleEl.innerText = "Ready!";
+                        timerEl.innerText = "";
+                        subEl.innerText = "";
                         setTimeout(() => routeToPhase(nextPhase), 1000);
                         return;
                     }
-                } else timeRemaining--;
+                } else {
+                    timerEl.innerText = timeRemaining;
+                    if (timeRemaining <= 3) {
+                        timerEl.classList.add('pulse');
+                    } else {
+                        timerEl.classList.remove('pulse');
+                    }
+                    timeRemaining--;
+                }
             };
+
             tick();
             state.timerInterval = setInterval(tick, 1000);
         }
 
         function routeToPhase(phase) {
+            if (phase === 'PART_A_RESUME') {
+                state.currentPart = 'PART_A';
+                showScreen('screen-question');
+                renderQuestion();
+                return;
+            }
+
             state.currentPart = phase;
             state.currentIndex = 0;
-            showScreen(phase.includes('FINAL') ? 'screen-final' : 'screen-question');
-            phase.includes('FINAL') ? renderFinalQuestion() : renderQuestion();
+            
+            if (phase === 'PART_A') {
+                document.getElementById('question-header').innerText = `Part A: KANA to ROMAJI`;
+                showScreen('screen-question');
+                renderQuestion();
+            } else if (phase === 'PART_B') {
+                document.getElementById('question-header').innerText = `PART B: HIRAGANA AND KATAKANA`;
+                showScreen('screen-question');
+                renderQuestion();
+            } else if (phase === 'FINAL') {
+                showScreen('screen-final');
+                renderFinalQuestion();
+            }
         }
 
+        /* --- QUESTION LOGIC (PARTS A & B) --- */
         function renderQuestion() {
-            if(state.timerInterval) clearInterval(state.timerInterval);
+            clearGlobalTimer();
+            state.isAnswering = false;
+            
             const isPartA = state.currentPart === 'PART_A';
-            if (isPartA && state.currentIndex === 10 && !state.midBreakTaken) {
-                state.midBreakTaken = true;
-                return startTransitionAMid();
-            }
             const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
-            if (state.currentIndex >= dataSet.length) return isPartA ? startTransitionB() : startTransitionC();
+            const timeLimit = isPartA ? 8 : 12; // Part A: 8s, Part B: 12s
+
+            // Trigger mid-way break exactly after 10 questions for Part A
+            if (isPartA && state.currentIndex === 10 && !state.hasPartABreakHappened) {
+                state.hasPartABreakHappened = true;
+                return startTransitionA_Halfway();
+            }
             
-            document.getElementById('progress-bar').style.width = `${((state.currentIndex + 1) / dataSet.length) * 100}%`;
-            document.getElementById('step-label').innerText = `${state.currentIndex + 1} / ${dataSet.length}`;
-            document.getElementById('question-display').innerText = dataSet[state.currentIndex].q;
+            if (state.currentIndex >= dataSet.length) {
+                return isPartA ? startTransitionB() : startTransitionC();
+            }
+
+            updateProgressBar(state.currentIndex + 1, dataSet.length);
+
+            const currentQ = dataSet[state.currentIndex];
+            document.getElementById('question-display').innerText = currentQ.q;
             
+            const timerEl = document.getElementById('question-timer');
+            timerEl.innerText = timeLimit;
+            timerEl.classList.remove('pulse');
+
             const container = document.getElementById('choices-container');
             container.innerHTML = '';
-            shuffleArray(dataSet[state.currentIndex].opts).forEach((opt, i) => {
+            
+            const shuffledOpts = shuffleArray(currentQ.opts);
+            shuffledOpts.forEach((opt, idx) => {
                 const btn = document.createElement('button');
-                btn.className = `choice-btn ${bgColors[i]}`;
+                btn.className = `choice-btn ${bgColors[idx]}`;
                 btn.innerText = opt;
-                btn.onclick = () => handleChoice(opt, dataSet[state.currentIndex].a);
+                btn.onclick = () => handleChoice(btn, opt, currentQ.a);
                 container.appendChild(btn);
             });
+
+            let timeLeft = timeLimit;
+            state.timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 3) timerEl.classList.add('pulse');
+                if (timeLeft <= 0) {
+                    clearGlobalTimer();
+                    handleChoice(null, null, currentQ.a); 
+                }
+            }, 1000);
+        }
+
+        function handleChoice(clickedBtn, selectedAns, correctAns) {
+            if (state.isAnswering) return;
+            state.isAnswering = true;
+            clearGlobalTimer();
+
+            const isPartA = state.currentPart === 'PART_A';
+            const isCorrect = selectedAns === correctAns;
             
-            let time = isPartA ? 8 : 12;
-            document.getElementById('question-timer').innerText = time;
-            state.timerInterval = setInterval(() => {
-                time--;
-                document.getElementById('question-timer').innerText = time;
-                if(time <= 0) { clearInterval(state.timerInterval); handleChoice(null, dataSet[state.currentIndex].a); }
-            }, 1000);
-        }
-
-        function handleChoice(selected, correct) {
-            clearInterval(state.timerInterval);
-            if(selected === correct) {
-                if(state.currentPart === 'PART_A') state.scores.partA++;
-                else state.scores.partB += 2;
+            if (isCorrect) {
+                if (isPartA) state.scores.partA++;
+                else state.scores.partB++;
             } else {
-                state.wrongAnswers.push({ part: state.currentPart, q: (state.currentPart === 'PART_A' ? state.shuffledPartA : state.shuffledPartB)[state.currentIndex].q, user: selected || 'Timeout', correct });
+                const dataSet = isPartA ? state.shuffledPartA : state.shuffledPartB;
+                const activeQuestion = dataSet[state.currentIndex].q;
+                state.wrongAnswers.push({
+                    part: isPartA ? 'Part A' : 'Part B',
+                    q: activeQuestion,
+                    user: selectedAns || 'Timed Out',
+                    correct: correctAns
+                });
             }
-            state.currentIndex++;
-            renderQuestion();
-        }
 
-        function renderFinalQuestion() {
-            if(state.timerInterval) clearInterval(state.timerInterval);
-            if(state.currentIndex === 5 && !state.midBreakTakenFinal) { state.midBreakTakenFinal = true; return startTransitionCMid(); }
-            const data = finalGroups[state.groupSelection];
-            if (state.currentIndex >= data.length) return showResults();
-            document.getElementById('final-display').innerText = data[state.currentIndex];
-            let time = 20;
-            state.timerInterval = setInterval(() => {
-                time--;
-                document.getElementById('question-timer').innerText = time;
-                if(time <= 0) { clearInterval(state.timerInterval); state.currentIndex++; renderFinalQuestion(); }
+            // Disable all buttons and show a neutral selection feedback
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn === clickedBtn) {
+                    btn.style.transform = 'scale(0.98)';
+                    btn.style.boxShadow = '0 0 0 4px #ffffff, 0 4px 12px rgba(0,0,0,0.15)';
+                } else {
+                    btn.style.opacity = '0.3';
+                    btn.style.filter = 'grayscale(0.5)';
+                }
+            });
+
+            setTimeout(() => {
+                state.currentIndex++;
+                renderQuestion();
             }, 1000);
         }
 
+        /* --- FINAL ROUND LOGIC (PART C - UNSHUFFLED SEQUENTIAL LIST) --- */
+        function renderFinalQuestion() {
+            clearGlobalTimer();
+            state.isAnswering = false;
+
+            // Load sequential data based on active group selection
+            const finalData = finalGroups[state.groupSelection];
+            
+            if (state.currentIndex >= finalData.length) {
+                return showResults();
+            }
+
+            updateProgressBar(state.currentIndex + 1, finalData.length);
+
+            // Display sequentially (unshuffled)
+            document.getElementById('final-display').innerText = finalData[state.currentIndex];
+            
+            const timerEl = document.getElementById('question-timer');
+            let timeLeft = 30; // Increased to 30 seconds of writing time
+            timerEl.innerText = timeLeft;
+            timerEl.classList.remove('pulse');
+
+            state.timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 3) timerEl.classList.add('pulse');
+                if (timeLeft <= 0) {
+                    clearGlobalTimer();
+                    state.currentIndex++;
+                    renderFinalQuestion();
+                }
+            }, 1000);
+        }
+
+        /* --- SCORE CALCULATOR & RESULTS VIEW --- */
         function showResults() {
             showScreen('screen-results');
-            document.getElementById('score-a').innerText = `${state.scores.partA} / 20 pts`;
-            document.getElementById('score-b').innerText = `${state.scores.partB} / 20 pts`;
-            document.getElementById('score-total').innerText = `${state.scores.partA + state.scores.partB} / 40`;
+            
+            const aMax = partA_Data.length;
+            const bMax = partB_Data.length;
+            
+            const aPerc = Math.round((state.scores.partA / aMax) * 100);
+            const bPerc = Math.round((state.scores.partB / bMax) * 100);
+
+            // Dynamic Weightage Formula: Part A is 1 point, Part B is 2 points
+            const totalScore = (state.scores.partA * 1) + (state.scores.partB * 2);
+            const totalMax = (aMax * 1) + (bMax * 2);
+            const totalPerc = Math.round((totalScore / totalMax) * 100);
+
+            // Updated to clearly display correct questions and weighted points
+            document.getElementById('score-a').innerText = `${state.scores.partA} / ${aMax} correct (${state.scores.partA * 1} / ${aMax * 1} pts) (${aPerc}%)`;
+            document.getElementById('score-b').innerText = `${state.scores.partB} / ${bMax} correct (${state.scores.partB * 2} / ${bMax * 2} pts) (${bPerc}%)`;
+            
+            const scoreTotalEl = document.getElementById('score-total');
+            scoreTotalEl.innerText = `${totalScore} / ${totalMax} pts (${totalPerc}%)`;
+
+            // Style accuracy colors
+            if (totalPerc <= 49) {
+                scoreTotalEl.style.color = '#ef4444'; // Red
+            } else if (totalPerc <= 79) {
+                scoreTotalEl.style.color = '#f59e0b'; // Orange
+            } else {
+                scoreTotalEl.style.color = '#10b981'; // Green
+            }
+
+            const wrongSection = document.getElementById('wrong-review-section');
+            const wrongScrollList = document.getElementById('wrong-scroll-list');
+            wrongScrollList.innerHTML = '';
+
+            if (state.wrongAnswers.length > 0) {
+                wrongSection.style.display = 'block';
+                state.wrongAnswers.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'wrong-card';
+                    card.innerHTML = `
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 2px;">
+                                ${item.part}
+                            </span>
+                            <span class="wrong-card-prompt">${item.q}</span>
+                        </div>
+                        <div class="wrong-card-details">
+                            <span class="details-badge-wrong">${item.user}</span>
+                            <span class="details-badge-correct">${item.correct}</span>
+                        </div>
+                    `;
+                    wrongScrollList.appendChild(card);
+                });
+            } else {
+                wrongSection.style.display = 'none';
+            }
         }
 
-        function resetApp() { showScreen('screen-menu'); }
-        function startTransitionAMid() { showScreen('screen-transition'); runDualPhaseTransition(15, 5, 'PART_A'); }
-        function startTransitionB() { showScreen('screen-transition'); runDualPhaseTransition(20, 5, 'PART_B'); }
-        function startTransitionC() { showScreen('screen-transition'); runDualPhaseTransition(20, 5, 'FINAL'); }
-        function startTransitionCMid() { showScreen('screen-transition'); runDualPhaseTransition(15, 5, 'FINAL'); }
+        function resetApp() {
+            clearGlobalTimer();
+            showScreen('screen-menu');
+        }
+
     </script>
 </body>
 </html>
